@@ -19,6 +19,9 @@ public class ExcelUpload {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @Column(unique = true, nullable = false, length = 64)
+    private String fileHash;
+
     private String fileName;
 
     private String uploadedBy;
