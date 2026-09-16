@@ -2,6 +2,7 @@ package com.tkm_ma.incident_analytics.model;
 
 import com.tkm_ma.incident_analytics.model.enums.*;
 import jakarta.persistence.*;
+import jakarta.validation.constraints.Email;
 import lombok.*;
 
 import java.time.LocalDateTime;
@@ -35,8 +36,10 @@ public class IncidentRecord {
     @JoinColumn(name = "upload_id")
     private ExcelUpload upload;
 
+    @Column(unique = true)
     private Long incidentId;
 
+    @Email
     private String callerEmail;
 
     private LocalDateTime logTime;
@@ -53,7 +56,7 @@ public class IncidentRecord {
 
     private String category;
 
-    private String department;
+    private String department = "TKM";
 
     private String medium;
 
@@ -70,7 +73,7 @@ public class IncidentRecord {
     @Enumerated(EnumType.STRING)
     private Impact impact;
 
-    private String workgroup;
+    private String workgroup = "TOPSERVE";
 
     private String assignedTo;
 
@@ -83,7 +86,7 @@ public class IncidentRecord {
 
     private LocalDateTime responseTime;
 
-    private LocalDateTime assignedEngineerFirstResponded;
+    private String assignedEngineerFirstResponded;
 
     private LocalDateTime resolutionTime;
 

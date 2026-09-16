@@ -7,4 +7,9 @@ import org.springframework.stereotype.Repository;
 @Repository
 public interface ExcelUploadRepository
         extends JpaRepository<ExcelUpload, Long> {
+
+    boolean existsByFileHash(String fileHash);
+
+
+
 }
