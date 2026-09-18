@@ -12,6 +12,7 @@ import org.springframework.web.bind.annotation.*;
 @RestController
 @RequestMapping("/api/incidents")
 @RequiredArgsConstructor
+@CrossOrigin("*")
 public class IncidentController {
 
     private final IncidentService incidentService;
