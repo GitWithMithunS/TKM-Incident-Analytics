@@ -14,6 +14,7 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/uploads")
 @RequiredArgsConstructor
+@CrossOrigin("*")
 public class UploadController {
 
     private final ExcelUploadService excelUploadService;
