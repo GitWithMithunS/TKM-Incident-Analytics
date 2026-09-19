@@ -1,14 +1,19 @@
-import './App.css'
-import { BrowserRouter, Routes, Route } from "react-router-dom";
-import HomePage from "./pages/HomePage";
-import DashboardPage from "./pages/DashboardPage";
+import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
+
+import Home from "./pages/Home";
+import Dashboard from "./pages/Dashboard";
 
 function App() {
   return (
     <BrowserRouter>
       <Routes>
-        <Route path="/" element={<HomePage />} />
-        <Route path="/dashboard/:uploadId" element={<DashboardPage />} />
+        <Route path="/" element={<Navigate to="/home" replace />} />
+
+        <Route path="/home" element={<Home />} />
+
+        <Route path="/dashboard" element={<Dashboard />} />
+
+        <Route path="*" element={<Navigate to="/home" replace />} />
       </Routes>
     </BrowserRouter>
   );
