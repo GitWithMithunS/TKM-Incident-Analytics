@@ -14,9 +14,16 @@ const IncidentTrendChart = ({ incidents = [] }) => {
     const grouped = {};
 
     incidents.forEach((incident) => {
-      if (!incident.logTime) return;
-
-      const date = new Date(incident.logTime);
+        
+        // console.log("Trend incidents:", incidents);
+        
+        const date = new Date(incident.logTime);
+        
+        // console.log(
+        //     "Log times:",
+        //     incidents.map((incident) => incident.logTime)
+        // );
+        if (!incident.logTime) return;
 
       if (Number.isNaN(date.getTime())) return;
 

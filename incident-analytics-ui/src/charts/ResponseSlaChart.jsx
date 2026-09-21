@@ -1,31 +1,40 @@
 import React, { useMemo } from "react";
 import {
-  PieChart,
-  Pie,
   Cell,
-  Tooltip,
-  Legend,
+  Pie,
+  PieChart,
   ResponsiveContainer,
+  Tooltip,
 } from "recharts";
 
 const ResponseSlaChart = ({ incidents = [] }) => {
   const data = useMemo(() => {
-    const met = incidents.filter(
-      (incident) => incident.responseSlaMet === true
+    const applicable = incidents.filter(
+      (incident) =>
+        incident.responseSlaMet !== null &&
+        incident.responseSlaMet !== undefined,
+    );
+
+    const met = applicable.filter(
+      (incident) => incident.responseSlaMet === true,
     ).length;
 
-    const failed = incidents.filter(
-      (incident) => incident.responseSlaMet === false
+    const failed = applicable.filter(
+      (incident) => incident.responseSlaMet === false,
     ).length;
+
+    const total = met + failed;
 
     return [
       {
         name: "SLA Met",
         value: met,
+        percentage: total > 0 ? Math.round((met / total) * 100) : 0,
       },
       {
         name: "SLA Failed",
         value: failed,
+        percentage: total > 0 ? Math.round((failed / total) * 100) : 0,
       },
     ];
   }, [incidents]);
@@ -45,43 +54,44 @@ const ResponseSlaChart = ({ incidents = [] }) => {
       </div>
 
       {total === 0 ? (
-        <div className="flex h-[280px] items-center justify-center">
+        <div className="flex h-[300px] items-center justify-center">
           <p className="text-sm text-gray-500">
             No response SLA data available.
           </p>
         </div>
       ) : (
-        <div className="h-[280px]">
+        <div className="h-[300px]">
           <ResponsiveContainer width="100%" height="100%">
             <PieChart>
               <Pie
                 data={data}
-                cx="50%"
-                cy="50%"
-                innerRadius={65}
-                outerRadius={95}
-                paddingAngle={2}
                 dataKey="value"
+                nameKey="name"
+                cx="50%"
+                cy="48%"
+                innerRadius={55}
+                outerRadius={85}
+                paddingAngle={2}
+                label={({ percentage }) => `${percentage}%`}
+                labelLine={false}
               >
                 <Cell fill="#16a34a" />
                 <Cell fill="#dc2626" />
               </Pie>
 
               <Tooltip
-                formatter={(value) => [
-                  value,
-                  "Incidents",
+                formatter={(value, name, item) => [
+                  `${item.payload.percentage}% (${value} incidents)`,
+                  name,
                 ]}
               />
 
-              <Legend verticalAlign="bottom" />
-
               <text
                 x="50%"
-                y="47%"
+                y="46%"
                 textAnchor="middle"
                 dominantBaseline="middle"
-                className="fill-gray-900 text-2xl font-bold"
+                className="fill-gray-900 text-lg font-semibold"
               >
                 {total}
               </text>
