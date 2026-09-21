@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from "react";
+import React, { useCallback, useEffect, useState, useMemo } from "react";
 import {
   FiAlertCircle,
   FiCheckCircle,
@@ -7,11 +7,13 @@ import {
 } from "react-icons/fi";
 
 import { getUploads, searchIncidents } from "../api/axios";
+import { useSearchParams } from "react-router-dom";
 
 import DashboardHeader from "../components/dashboard/DashboardHeader";
 import DashboardFilters from "../components/dashboard/DashboardFilters";
 import KpiCard from "../components/dashboard/KpiCard";
 import IncidentTable from "../components/dashboard/IncidentTable";
+import IncidentDetailModal from "../components/dashboard/IncidentDetailModal";
 
 import ResponseSlaChart from "../charts/ResponseSlaChart";
 import ResolutionSlaChart from "../charts/ResolutionSlaChart";
@@ -78,11 +80,24 @@ const buildRequest = (filters) => {
 };
 
 const Dashboard = () => {
+  //for URL search parameters - cliked on upload.id on home page, to filter the dashboard table and charts based on that upload id
+  const [searchParams] = useSearchParams();
+  //get the uploadId from the URL search parameters
+  const uploadIdFromUrl = searchParams.get("uploadId");
+
+  //initial filters for the dashboard, including the uploadId from the URL if present
+  const initialFilters = useMemo(
+    () => ({
+      ...EMPTY_FILTERS,
+      uploadId: uploadIdFromUrl || "",
+    }),
+    [uploadIdFromUrl],
+  );
+
   const [uploads, setUploads] = useState([]);
 
-  const [draftFilters, setDraftFilters] = useState(EMPTY_FILTERS);
-
-  const [appliedFilters, setAppliedFilters] = useState(EMPTY_FILTERS);
+  const [draftFilters, setDraftFilters] = useState(initialFilters);
+  const [appliedFilters, setAppliedFilters] = useState(initialFilters);
 
   const [analyticsData, setAnalyticsData] = useState([]);
   const [analyticsMeta, setAnalyticsMeta] = useState(null);
@@ -91,17 +106,30 @@ const Dashboard = () => {
   const [tableMeta, setTableMeta] = useState(null);
 
   const [loadingAnalytics, setLoadingAnalytics] = useState(false);
-
   const [loadingTable, setLoadingTable] = useState(false);
 
   const [error, setError] = useState("");
 
+  // Current table page
   const [page, setPage] = useState(0);
+
+  // Currently selected incident for the detail modal
+  const [selectedIncident, setSelectedIncident] = useState(null);
+
+  // Table sorting
+  const [tableSort, setTableSort] = useState({
+    sortBy: "incidentId",
+    direction: "asc",
+  });
 
   /*
    * Load upload history.
    */
   useEffect(() => {
+    //not calling getUploads if uploadId is present in the URL, as we don't need to load all uploads in that case
+    // if (uploadIdFromUrl) {
+    //   return;
+    // }
     const loadUploads = async () => {
       try {
         const data = await getUploads();
@@ -149,46 +177,92 @@ const Dashboard = () => {
 
   /*
    * Load paginated table data.
+   *
+   * Only the table is refreshed when changing page/sort.
+   * Analytics data is NOT requested again.
    */
-  const loadTable = useCallback(async (filters, requestedPage = 0) => {
-    setLoadingTable(true);
+  // const loadTable = useCallback(
+  //   async (
+  //     filters,
+  //     requestedPage = 0,
+  //     requestedSortBy = tableSort.sortBy,
+  //     requestedDirection = tableSort.direction,
+  //   ) => {
+  //     setLoadingTable(true);
 
-    try {
-      const request = buildRequest(filters);
+  //     try {
+  //       const request = buildRequest(filters);
 
-      const response = await searchIncidents(request, {
-        page: requestedPage,
-        size: PAGE_SIZE,
-        sortBy: "incidentId",
-        direction: "asc",
-      });
+  //       const response = await searchIncidents(request, {
+  //         page: requestedPage,
+  //         size: PAGE_SIZE,
+  //         sortBy: requestedSortBy,
+  //         direction: requestedDirection,
+  //       });
 
-      setIncidents(response?.content || []);
-      setTableMeta(response);
-    } catch (err) {
-      console.error("Failed to load incidents:", err);
+  //       setIncidents(response?.content || []);
+  //       setTableMeta(response);
+  //     } catch (err) {
+  //       console.error("Failed to load incidents:", err);
 
-      setIncidents([]);
-      setTableMeta(null);
-      setError("Unable to load incident records. Please try again.");
-    } finally {
-      setLoadingTable(false);
-    }
-  }, []);
+  //       setIncidents([]);
+  //       setTableMeta(null);
+  //       setError("Unable to load incident records. Please try again.");
+  //     } finally {
+  //       setLoadingTable(false);
+  //     }
+  //   },
+  //   [tableSort.sortBy, tableSort.direction],
+  // );
+
+  const loadTable = useCallback(
+    async (
+      filters,
+      requestedPage = 0,
+      requestedSortBy = "incidentId",
+      requestedDirection = "asc",
+    ) => {
+      setLoadingTable(true);
+
+      try {
+        const request = buildRequest(filters);
+
+        const response = await searchIncidents(request, {
+          page: requestedPage,
+          size: PAGE_SIZE,
+          sortBy: requestedSortBy,
+          direction: requestedDirection,
+        });
+
+        setIncidents(response?.content || []);
+        setTableMeta(response);
+      } catch (err) {
+        console.error("Failed to load incidents:", err);
+
+        setIncidents([]);
+        setTableMeta(null);
+        setError("Unable to load incident records. Please try again.");
+      } finally {
+        setLoadingTable(false);
+      }
+    },
+    [],
+  );
 
   /*
    * Initial dashboard load.
    */
   useEffect(() => {
-    loadAnalytics(EMPTY_FILTERS);
-    loadTable(EMPTY_FILTERS, 0);
-  }, [loadAnalytics, loadTable]);
+    loadAnalytics(initialFilters);
+
+    loadTable(initialFilters, 0, "incidentId", "asc");
+  }, [initialFilters, loadAnalytics, loadTable]);
 
   /*
    * Apply filters.
    *
-   * Both analytics and table are refreshed,
-   * and pagination returns to page 1.
+   * Both analytics and table are refreshed.
+   * Pagination returns to page 1.
    */
   const handleApplyFilters = async () => {
     setPage(0);
@@ -199,7 +273,10 @@ const Dashboard = () => {
 
     setAppliedFilters(newFilters);
 
-    await Promise.all([loadAnalytics(newFilters), loadTable(newFilters, 0)]);
+    await Promise.all([
+      loadAnalytics(newFilters),
+      loadTable(newFilters, 0, tableSort.sortBy, tableSort.direction),
+    ]);
   };
 
   /*
@@ -212,14 +289,12 @@ const Dashboard = () => {
 
     await Promise.all([
       loadAnalytics(EMPTY_FILTERS),
-      loadTable(EMPTY_FILTERS, 0),
+      loadTable(EMPTY_FILTERS, 0, tableSort.sortBy, tableSort.direction),
     ]);
   };
 
   /*
    * Filter field changes do NOT trigger API calls.
-   *
-   * API calls happen only when Apply Filters is clicked.
    */
   const handleFilterChange = (event) => {
     const { name, value } = event.target;
@@ -244,7 +319,26 @@ const Dashboard = () => {
 
     setPage(newPage);
 
-    await loadTable(appliedFilters, newPage);
+    await loadTable(
+      appliedFilters,
+      newPage,
+      tableSort.sortBy,
+      tableSort.direction,
+    );
+  };
+
+  /*
+   * Sorting only reloads the table.
+   */
+  const handleSort = async (sortBy, direction) => {
+    setTableSort({
+      sortBy,
+      direction,
+    });
+
+    setPage(0);
+
+    await loadTable(appliedFilters, 0, sortBy, direction);
   };
 
   /*
@@ -297,7 +391,13 @@ const Dashboard = () => {
               type="button"
               onClick={() => {
                 loadAnalytics(appliedFilters);
-                loadTable(appliedFilters, page);
+
+                loadTable(
+                  appliedFilters,
+                  page,
+                  tableSort.sortBy,
+                  tableSort.direction,
+                );
               }}
               className="ml-auto inline-flex items-center gap-2 rounded-lg border border-red-200 bg-white px-3 py-2 text-sm font-medium text-red-700 hover:bg-red-50"
             >
@@ -371,38 +471,42 @@ const Dashboard = () => {
           </div>
         )}
 
-
         {/* Analytics charts */}
         {!loadingAnalytics && analyticsData.length > 0 && (
           <div className="mb-6 space-y-6">
-            {/* Most important chart */}
             <ResponseSlaChart incidents={analyticsData} />
 
-            {/* Status + Trend */}
             <div className="grid grid-cols-1 gap-6 xl:grid-cols-2">
               <StatusDistributionChart incidents={analyticsData} />
 
               <IncidentTrendChart incidents={analyticsData} />
             </div>
 
-            {/* Resolution SLA */}
             <ResolutionSlaChart incidents={analyticsData} />
           </div>
         )}
-
-
 
         {/* Incident table */}
         <IncidentTable
           incidents={incidents}
           loading={loadingTable}
           page={page}
-          size={PAGE_SIZE}
-          totalElements={tableMeta?.totalElements || 0}
-          totalPages={tableMeta?.totalPages || 0}
+          pageSize={PAGE_SIZE}
+          totalElements={tableMeta?.totalElements ?? 0}
+          totalPages={tableMeta?.totalPages ?? 0}
+          sortBy={tableSort.sortBy}
+          direction={tableSort.direction}
           onPageChange={handlePageChange}
+          onSort={handleSort}
+          onRowClick={setSelectedIncident}
         />
       </div>
+
+      {/* Incident detail modal */}
+      <IncidentDetailModal
+        incident={selectedIncident}
+        onClose={() => setSelectedIncident(null)}
+      />
     </div>
   );
 };

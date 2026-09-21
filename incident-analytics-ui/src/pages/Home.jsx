@@ -8,6 +8,7 @@ import {
   FiX,
 } from "react-icons/fi";
 import { toast } from "react-toastify";
+import { Link, useNavigate } from "react-router-dom";
 
 import { getUploads, uploadExcel } from "../api/axios";
 
@@ -33,6 +34,7 @@ function formatDate(dateString) {
 
 function Home() {
   const fileInputRef = useRef(null);
+  const navigate = useNavigate();
 
   const [selectedFile, setSelectedFile] = useState(null);
   const [uploads, setUploads] = useState([]);
@@ -172,12 +174,12 @@ function Home() {
             </h1>
           </div>
 
-          <a
-            href="/dashboard"
+          <Link
+            to="/dashboard"
             className="rounded-lg bg-slate-900 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-slate-800"
           >
             Open Dashboard
-          </a>
+          </Link>
         </div>
       </header>
 
@@ -391,6 +393,7 @@ function Home() {
                   {uploads.map((upload) => (
                     <tr
                       key={upload.id}
+                      onClick={() => navigate(`/dashboard?uploadId=${upload.id}`)}
                       className="transition hover:bg-slate-50"
                     >
                       <td className="px-6 py-4">
