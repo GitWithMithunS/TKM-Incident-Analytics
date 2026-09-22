@@ -72,6 +72,7 @@ const DashboardFilters = ({
             <option value="CLOSED">Closed</option>
             <option value="RESOLVED">Resolved</option>
             <option value="PENDING">Pending</option>
+            <option value="IN-PROGRESS">IN-PROGRESS</option>
           </select>
         </div>
 

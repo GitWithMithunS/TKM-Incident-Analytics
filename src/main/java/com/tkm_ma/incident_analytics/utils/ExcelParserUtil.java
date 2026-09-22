@@ -477,6 +477,7 @@ public class ExcelParserUtil {
             case "CLOSED" -> Status.CLOSED;
             case "RESOLVED" -> Status.RESOLVED;
             case "OPEN" -> Status.OPEN;
+            case "IN-PROGRESS" -> Status.IN_PROGRESS;
             case "PENDING" -> Status.PENDING;
 
             default -> null;

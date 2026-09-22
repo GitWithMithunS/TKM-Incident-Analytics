@@ -11,6 +11,7 @@ import { toast } from "react-toastify";
 import { Link, useNavigate } from "react-router-dom";
 
 import { getUploads, uploadExcel } from "../api/axios";
+import Navbar from "../components/layout/navbar" 
 
 const MAX_FILE_SIZE = 20 * 1024 * 1024;
 
@@ -162,26 +163,7 @@ function Home() {
   return (
     <div className="min-h-screen bg-slate-50 text-slate-900">
       {/* Header */}
-      <header className="border-b border-slate-200 bg-white">
-        <div className="mx-auto flex max-w-[1600px] items-center justify-between px-6 py-4 lg:px-8">
-          <div>
-            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-red-600">
-              Toyota TKM
-            </p>
-
-            <h1 className="mt-1 text-xl font-semibold tracking-tight text-slate-900">
-              Incident Analytics
-            </h1>
-          </div>
-
-          <Link
-            to="/dashboard"
-            className="rounded-lg bg-slate-900 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-slate-800"
-          >
-            Open Dashboard
-          </Link>
-        </div>
-      </header>
+      <Navbar/>
 
       <main className="mx-auto max-w-[1600px] px-6 py-8 lg:px-8">
         {/* Page heading */}

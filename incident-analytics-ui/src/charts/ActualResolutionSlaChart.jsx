@@ -8,23 +8,44 @@ import {
   ResponsiveContainer,
 } from "recharts";
 
-const ResolutionSlaChart = ({ incidents = [] }) => {
+const ActualResolutionSlaChart = ({ incidents = [] }) => {
   const data = useMemo(() => {
-    const metWithoutPending = incidents.filter(
-      (incident) => incident.resolutionSlaMetWithoutPending === true,
-    ).length;
+    
+    const metWithoutPending = incidents.filter((incident) => {
+      return (
+        incident.resolutionSlaMetWithoutPending === true &&
+        (incident.status === "CLOSED" || incident.status === "RESOLVED")
+      );
+    }).length;
 
-    const failedWithoutPending = incidents.filter(
-      (incident) => incident.resolutionSlaMetWithoutPending === false,
-    ).length;
+    const failedWithoutPending = incidents.filter((incident) => {
+      return (
+        incident.resolutionSlaMetWithoutPending === false &&
+        (incident.status === "CLOSED" || incident.status === "RESOLVED")
+      );
+    }).length;
 
-    const metWithPending = incidents.filter(
-      (incident) => incident.resolutionSlaMetWithPending === true,
-    ).length;
+    const metWithPending = incidents.filter((incident) => {
+      return (
+        incident.resolutionSlaMetWithPending === true &&
+        (incident.status === "CLOSED" || incident.status === "RESOLVED")
+      );
+    }).length;
 
-    const failedWithPending = incidents.filter(
-      (incident) => incident.resolutionSlaMetWithPending === false,
-    ).length;
+    const failedWithPending = incidents.filter((incident) => {
+      return (
+        incident.resolutionSlaMetWithPending === false &&
+        (incident.status === "CLOSED" || incident.status === "RESOLVED")
+      );
+    }).length;
+
+    // const metWithPending = incidents.filter(
+    //   (incident) => incident.resolutionSlaMetWithPending === true,
+    // ).length;
+
+    // const failedWithPending = incidents.filter(
+    //   (incident) => incident.resolutionSlaMetWithPending === false,
+    // ).length;
 
     const calculatePercentage = (met, failed) => {
       const total = met + failed;
@@ -99,7 +120,7 @@ const ResolutionSlaChart = ({ incidents = [] }) => {
               dataKey="value"
               nameKey="name"
               label={({ percentage }) => `${percentage}%`}
-              labelLine = {{ stroke: "#9ca3af", strokeWidth: 1 }}
+              labelLine={{ stroke: "#9ca3af", strokeWidth: 1 }}
             >
               <Cell fill="#16a34a" />
               <Cell fill="#dc2626" />
@@ -143,7 +164,7 @@ const ResolutionSlaChart = ({ incidents = [] }) => {
     <div className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
       <div className="mb-4">
         <h2 className="text-base font-semibold text-gray-900">
-          Resolution SLA Performance [STATUS : ALL]
+          Actual Resolution SLA Performance [STATUS : CLOSED | RESOLVED]
         </h2>
 
         <p className="mt-1 text-xs text-gray-500">
@@ -153,13 +174,17 @@ const ResolutionSlaChart = ({ incidents = [] }) => {
 
       <div className="grid grid-cols-1 divide-y divide-gray-200 md:grid-cols-2 md:divide-x md:divide-y-0">
         <div className="pr-0 md:pr-5">
-          <h3 className="text-sm font-medium text-gray-700 ">Without Pending</h3>
+          <h3 className="text-sm font-medium text-gray-700 ">
+            Without Pending
+          </h3>
 
           {renderPie(data.withoutPending, data.withoutPendingTotal)}
         </div>
 
         <div className="pt-5 bg- md:pl-5 md:pt-0">
-          <h3 className="text-sm font-medium text-gray-700">With Pending</h3>
+          <h3 className="text-sm font-medium text-gray-700">
+            With Pending
+          </h3>
 
           {renderPie(data.withPending, data.withPendingTotal)}
         </div>
@@ -168,4 +193,4 @@ const ResolutionSlaChart = ({ incidents = [] }) => {
   );
 };
 
-export default ResolutionSlaChart;
+export default ActualResolutionSlaChart;

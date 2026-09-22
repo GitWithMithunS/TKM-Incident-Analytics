@@ -16,6 +16,7 @@ const StatusDistributionChart = ({ incidents = [] }) => {
       "PENDING",
       "RESOLVED",
       "CLOSED",
+      "IN_PROGRESS"
     ];
 
     return statuses.map((status) => ({
