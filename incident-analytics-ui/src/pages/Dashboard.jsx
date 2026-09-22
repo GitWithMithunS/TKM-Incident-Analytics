@@ -8,6 +8,8 @@ import {
 
 import { getUploads, searchIncidents } from "../api/axios";
 import { useSearchParams } from "react-router-dom";
+import { toast } from "react-toastify";
+
 
 import DashboardHeader from "../components/dashboard/DashboardHeader";
 import DashboardFilters from "../components/dashboard/DashboardFilters";
@@ -17,8 +19,10 @@ import IncidentDetailModal from "../components/dashboard/IncidentDetailModal";
 
 import ResponseSlaChart from "../charts/ResponseSlaChart";
 import ResolutionSlaChart from "../charts/ResolutionSlaChart";
+import ActualResolutionSlaChart from "../charts/ActualResolutionSlaChart";
 import StatusDistributionChart from "../charts/StatusDistributionChart";
 import IncidentTrendChart from "../charts/IncidentTrendChart";
+import Navbar from "../components/layout/navbar";
 
 const PAGE_SIZE = 20;
 
@@ -133,9 +137,12 @@ const Dashboard = () => {
     const loadUploads = async () => {
       try {
         const data = await getUploads();
+        console.log("Upload data fetched : ", data);
         setUploads(data || []);
+        // toast.success("Excel Uploads fetched successfully");
       } catch (err) {
         console.error("Failed to load uploads:", err);
+        toast.error("Error fetching the uploads");
       }
     };
 
@@ -155,6 +162,9 @@ const Dashboard = () => {
     try {
       const request = buildRequest(filters);
 
+      console.log("Request {} : " , request);
+
+
       const response = await searchIncidents(request, {
         page: 0,
         size: 10000,
@@ -166,7 +176,7 @@ const Dashboard = () => {
       setAnalyticsMeta(response);
     } catch (err) {
       console.error("Failed to load analytics:", err);
-
+      toast.error("Failed to load Analytics . Plz try again later");
       setAnalyticsData([]);
       setAnalyticsMeta(null);
       setError("Unable to load incident analytics. Please try again.");
@@ -175,45 +185,6 @@ const Dashboard = () => {
     }
   }, []);
 
-  /*
-   * Load paginated table data.
-   *
-   * Only the table is refreshed when changing page/sort.
-   * Analytics data is NOT requested again.
-   */
-  // const loadTable = useCallback(
-  //   async (
-  //     filters,
-  //     requestedPage = 0,
-  //     requestedSortBy = tableSort.sortBy,
-  //     requestedDirection = tableSort.direction,
-  //   ) => {
-  //     setLoadingTable(true);
-
-  //     try {
-  //       const request = buildRequest(filters);
-
-  //       const response = await searchIncidents(request, {
-  //         page: requestedPage,
-  //         size: PAGE_SIZE,
-  //         sortBy: requestedSortBy,
-  //         direction: requestedDirection,
-  //       });
-
-  //       setIncidents(response?.content || []);
-  //       setTableMeta(response);
-  //     } catch (err) {
-  //       console.error("Failed to load incidents:", err);
-
-  //       setIncidents([]);
-  //       setTableMeta(null);
-  //       setError("Unable to load incident records. Please try again.");
-  //     } finally {
-  //       setLoadingTable(false);
-  //     }
-  //   },
-  //   [tableSort.sortBy, tableSort.direction],
-  // );
 
   const loadTable = useCallback(
     async (
@@ -234,10 +205,15 @@ const Dashboard = () => {
           direction: requestedDirection,
         });
 
+        console.log("Repsonse data fecthed : " , response);
+        // toast.success("Incidents fetched Successfully");
+
         setIncidents(response?.content || []);
         setTableMeta(response);
       } catch (err) {
         console.error("Failed to load incidents:", err);
+
+        toast.error("Failed to load incidents");
 
         setIncidents([]);
         setTableMeta(null);
@@ -277,6 +253,8 @@ const Dashboard = () => {
       loadAnalytics(newFilters),
       loadTable(newFilters, 0, tableSort.sortBy, tableSort.direction),
     ]);
+
+    toast.info("Dashboard Updated.");
   };
 
   /*
@@ -286,6 +264,7 @@ const Dashboard = () => {
     setDraftFilters(EMPTY_FILTERS);
     setAppliedFilters(EMPTY_FILTERS);
     setPage(0);
+    toast.info("Filter reset");
 
     await Promise.all([
       loadAnalytics(EMPTY_FILTERS),
@@ -376,138 +355,147 @@ const Dashboard = () => {
   const selectedUpload = appliedFilters.uploadId;
 
   return (
-    <div className="min-h-screen bg-gray-50 px-4 py-6 sm:px-6 lg:px-8">
-      <div className="mx-auto max-w-[1600px]">
-        <DashboardHeader selectedUpload={selectedUpload} uploads={uploads} />
-
-        {/* Error */}
-        {error && (
-          <div className="mb-6 flex items-center gap-3 rounded-xl border border-red-200 bg-red-50 px-4 py-3">
-            <FiAlertCircle className="h-5 w-5 text-red-600" />
-
-            <p className="text-sm text-red-700">{error}</p>
-
-            <button
-              type="button"
-              onClick={() => {
-                loadAnalytics(appliedFilters);
-
-                loadTable(
-                  appliedFilters,
-                  page,
-                  tableSort.sortBy,
-                  tableSort.direction,
-                );
-              }}
-              className="ml-auto inline-flex items-center gap-2 rounded-lg border border-red-200 bg-white px-3 py-2 text-sm font-medium text-red-700 hover:bg-red-50"
-            >
-              <FiRefreshCw className="h-4 w-4" />
-              Retry
-            </button>
-          </div>
-        )}
-
-        <DashboardFilters
-          filters={draftFilters}
-          uploads={uploads}
-          onChange={handleFilterChange}
-          onApply={handleApplyFilters}
-          onReset={handleResetFilters}
-          loading={loadingAnalytics || loadingTable}
-        />
-
-        {/* KPI section */}
-        {loadingAnalytics && !analyticsMeta ? (
-          <div className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            {[1, 2, 3, 4].map((item) => (
-              <div
-                key={item}
-                className="h-32 animate-pulse rounded-xl border border-gray-200 bg-white"
-              />
-            ))}
-          </div>
-        ) : (
-          <div className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            <KpiCard
-              title="Total Incidents"
-              value={totalIncidents.toLocaleString()}
-              subtitle="Current filtered dataset"
-              icon={FiAlertCircle}
+    <>
+      <div className="min-h-screen bg-slate-50 text-slate-900">
+        <Navbar />
+        <div className="min-h-screen bg-gray-50 px-4 py-6 sm:px-6 lg:px-8">
+          <div className="mx-auto max-w-[1600px]">
+            <DashboardHeader
+              selectedUpload={selectedUpload}
+              uploads={uploads}
             />
 
-            <KpiCard
-              title="Open Incidents"
-              value={openIncidents.toLocaleString()}
-              subtitle="Currently open"
-              icon={FiClock}
+            {/* Error */}
+            {error && (
+              <div className="mb-6 flex items-center gap-3 rounded-xl border border-red-200 bg-red-50 px-4 py-3">
+                <FiAlertCircle className="h-5 w-5 text-red-600" />
+
+                <p className="text-sm text-red-700">{error}</p>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    loadAnalytics(appliedFilters);
+
+                    loadTable(
+                      appliedFilters,
+                      page,
+                      tableSort.sortBy,
+                      tableSort.direction,
+                    );
+                  }}
+                  className="ml-auto inline-flex items-center gap-2 rounded-lg border border-red-200 bg-white px-3 py-2 text-sm font-medium text-red-700 hover:bg-red-50"
+                >
+                  <FiRefreshCw className="h-4 w-4" />
+                  Retry
+                </button>
+              </div>
+            )}
+
+            <DashboardFilters
+              filters={draftFilters}
+              uploads={uploads}
+              onChange={handleFilterChange}
+              onApply={handleApplyFilters}
+              onReset={handleResetFilters}
+              loading={loadingAnalytics || loadingTable}
             />
 
-            <KpiCard
-              title="Resolved / Closed"
-              value={resolvedIncidents.toLocaleString()}
-              subtitle="Resolved or closed"
-              icon={FiCheckCircle}
+            {/* KPI section */}
+            {loadingAnalytics && !analyticsMeta ? (
+              <div className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                {[1, 2, 3, 4].map((item) => (
+                  <div
+                    key={item}
+                    className="h-32 animate-pulse rounded-xl border border-gray-200 bg-white"
+                  />
+                ))}
+              </div>
+            ) : (
+              <div className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                <KpiCard
+                  title="Total Incidents"
+                  value={totalIncidents.toLocaleString()}
+                  subtitle="Current filtered dataset"
+                  icon={FiAlertCircle}
+                />
+
+                <KpiCard
+                  title="Open Incidents"
+                  value={openIncidents.toLocaleString()}
+                  subtitle="Currently open"
+                  icon={FiClock}
+                />
+
+                <KpiCard
+                  title="Resolved / Closed"
+                  value={resolvedIncidents.toLocaleString()}
+                  subtitle="Resolved or closed"
+                  icon={FiCheckCircle}
+                />
+
+                <KpiCard
+                  title="Response SLA"
+                  value={`${responseSlaPercentage}%`}
+                  subtitle={`${responseSlaMet.toLocaleString()} incidents met SLA`}
+                  icon={FiCheckCircle}
+                />
+              </div>
+            )}
+
+            {/* Secondary KPI information */}
+            {!loadingAnalytics && analyticsData.length > 0 && (
+              <div className="mb-6 flex flex-wrap gap-3">
+                <div className="rounded-lg border border-gray-200 bg-white px-4 py-3">
+                  <span className="text-xs text-gray-500">Reopened</span>
+
+                  <span className="ml-2 text-sm font-semibold text-gray-900">
+                    {reopenedIncidents.toLocaleString()}
+                  </span>
+                </div>
+              </div>
+            )}
+
+            {/* Analytics charts */}
+            {!loadingAnalytics && analyticsData.length > 0 && (
+              <div className="mb-6 space-y-6">
+                <ResponseSlaChart incidents={analyticsData} />
+
+                <div className="grid grid-cols-1 gap-6 xl:grid-cols-2">
+                  <StatusDistributionChart incidents={analyticsData} />
+
+                  <IncidentTrendChart incidents={analyticsData} />
+                </div>
+
+                <ResolutionSlaChart incidents={analyticsData} />
+                <ActualResolutionSlaChart incidents={analyticsData} />
+              </div>
+            )}
+
+            {/* Incident table */}
+            <IncidentTable
+              incidents={incidents}
+              loading={loadingTable}
+              page={page}
+              pageSize={PAGE_SIZE}
+              totalElements={tableMeta?.totalElements ?? 0}
+              totalPages={tableMeta?.totalPages ?? 0}
+              sortBy={tableSort.sortBy}
+              direction={tableSort.direction}
+              onPageChange={handlePageChange}
+              onSort={handleSort}
+              onRowClick={setSelectedIncident}
             />
-
-            <KpiCard
-              title="Response SLA"
-              value={`${responseSlaPercentage}%`}
-              subtitle={`${responseSlaMet.toLocaleString()} incidents met SLA`}
-              icon={FiCheckCircle}
-            />
           </div>
-        )}
 
-        {/* Secondary KPI information */}
-        {!loadingAnalytics && analyticsData.length > 0 && (
-          <div className="mb-6 flex flex-wrap gap-3">
-            <div className="rounded-lg border border-gray-200 bg-white px-4 py-3">
-              <span className="text-xs text-gray-500">Reopened</span>
-
-              <span className="ml-2 text-sm font-semibold text-gray-900">
-                {reopenedIncidents.toLocaleString()}
-              </span>
-            </div>
-          </div>
-        )}
-
-        {/* Analytics charts */}
-        {!loadingAnalytics && analyticsData.length > 0 && (
-          <div className="mb-6 space-y-6">
-            <ResponseSlaChart incidents={analyticsData} />
-
-            <div className="grid grid-cols-1 gap-6 xl:grid-cols-2">
-              <StatusDistributionChart incidents={analyticsData} />
-
-              <IncidentTrendChart incidents={analyticsData} />
-            </div>
-
-            <ResolutionSlaChart incidents={analyticsData} />
-          </div>
-        )}
-
-        {/* Incident table */}
-        <IncidentTable
-          incidents={incidents}
-          loading={loadingTable}
-          page={page}
-          pageSize={PAGE_SIZE}
-          totalElements={tableMeta?.totalElements ?? 0}
-          totalPages={tableMeta?.totalPages ?? 0}
-          sortBy={tableSort.sortBy}
-          direction={tableSort.direction}
-          onPageChange={handlePageChange}
-          onSort={handleSort}
-          onRowClick={setSelectedIncident}
-        />
+          {/* Incident detail modal */}
+          <IncidentDetailModal
+            incident={selectedIncident}
+            onClose={() => setSelectedIncident(null)}
+          />
+        </div>
       </div>
-
-      {/* Incident detail modal */}
-      <IncidentDetailModal
-        incident={selectedIncident}
-        onClose={() => setSelectedIncident(null)}
-      />
-    </div>
+    </>
   );
 };
 

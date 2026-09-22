@@ -119,6 +119,51 @@ public class IncidentSpecification {
                 );
             }
 
+            //caller email
+            if (request.getCallerEmail() != null &&
+                    !request.getCallerEmail().isBlank()) {
+
+                predicates.add(
+                        cb.like(
+                                cb.lower(root.get("callerEmail")),
+                                "%" +
+                                        request.getCallerEmail()
+                                                .toLowerCase()
+                                        + "%"
+                        )
+                );
+            }
+
+            //LoggedfBy
+            if (request.getLoggedBy() != null &&
+                    !request.getLoggedBy().isBlank()) {
+
+                predicates.add(
+                        cb.like(
+                                cb.lower(root.get("loggedBy")),
+                                "%" +
+                                        request.getLoggedBy()
+                                                .toLowerCase()
+                                        + "%"
+                        )
+                );
+            }
+
+            //first TO response
+            if (request.getAssignedEngineerFirstResponded() != null &&
+                    !request.getAssignedEngineerFirstResponded().isBlank()) {
+
+                predicates.add(
+                        cb.like(
+                                cb.lower(root.get("assignedEngineerFirstResponded")),
+                                "%" +
+                                        request.getAssignedEngineerFirstResponded()
+                                                .toLowerCase()
+                                        + "%"
+                        )
+                );
+            }
+
             return cb.and(
                     predicates.toArray(
                             new Predicate[0]
