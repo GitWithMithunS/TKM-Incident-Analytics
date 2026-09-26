@@ -32,7 +32,5 @@ public class UploadController {
         return ResponseEntity.ok( excelUploadService.getAllUploads());
     }
 
-//    public ResponseEntity<IncidentRecord> getIncidentRecord(){
-//        return ResponseEntity.ok( excelI)
-//    }
+
 }
